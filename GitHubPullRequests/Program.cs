@@ -25,9 +25,17 @@ namespace GitHubPullRequests
                 {
                     ListPullRequests();
                 }
-                else if(argumentOptions.CreatePR && !string.IsNullOrWhiteSpace(argumentOptions.BranchName))
+                else if (argumentOptions.CreatePR && !string.IsNullOrWhiteSpace(argumentOptions.BranchName))
                 {
                     CreatePullRequest(argumentOptions, MainBranch);
+                }
+                else if (argumentOptions.OpenWeb && argumentOptions.PullRequestId.HasValue)
+                {
+                    OpenPrWeb(argumentOptions.PullRequestId.Value);
+                }
+                else if (argumentOptions.Sha && argumentOptions.PullRequestId.HasValue)
+                {
+                    PrintPrSha(argumentOptions.PullRequestId.Value);
                 }
                 else
                 {
@@ -35,6 +43,7 @@ namespace GitHubPullRequests
                 }
             }
         }
+
 
         private static string RunGitCommand(string command)
         {
@@ -66,9 +75,33 @@ namespace GitHubPullRequests
             return stdout;
         }
 
-        private static void CreatePullRequest(ArgumentOptions argumentOptions, string MainBranch)
+        private static void PrintPrSha(int pullRequestId)
         {
-            Console.WriteLine("Creating PR for branch {0} into {1}", argumentOptions.BranchName, MainBranch);
+            var pr = GitHub.GetPullRequestData(pullRequestId);
+            Console.WriteLine(pr.head.sha);
+        }
+
+
+        private static void OpenPrWeb(int pullRequestId)
+        {
+            var pr = GitHub.GetPullRequestData(pullRequestId);
+            var urlString = pr.html_url.Value;
+
+            Uri url;
+            Uri.TryCreate(urlString, UriKind.Absolute, out url);
+            if (url.Scheme == Uri.UriSchemeHttp || url.Scheme == Uri.UriSchemeHttps)
+            {
+                Process.Start(urlString);
+            }
+            else
+            {
+                Console.WriteLine("Invalid PR url: " + urlString);
+            }
+        }
+
+        private static void CreatePullRequest(ArgumentOptions argumentOptions, string mainBranch)
+        {
+            Console.WriteLine("Creating PR for branch {0} into {1}", argumentOptions.BranchName, mainBranch);
 
             var executablePath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
             executablePath = new Uri(executablePath).LocalPath;
@@ -77,11 +110,12 @@ namespace GitHubPullRequests
 
             string prMessageCreatorTemplate =
                 string.Format(
+                    "{0}" +
                     "# The first line is the title of the PR, all other lines are the body{0}" +
                     "# Lines starting with # and blank lines are ignored.{0}" +
                     "# PR branch: {1}.\n" +
                     "# Main branch: {2}",
-                    Environment.NewLine, argumentOptions.BranchName, MainBranch);
+                    Environment.NewLine, argumentOptions.BranchName, mainBranch);
 
             File.WriteAllText(prMessageFilePath, prMessageCreatorTemplate);
             Process.Start(notepadPath, prMessageFilePath).WaitForExit();
@@ -93,12 +127,17 @@ namespace GitHubPullRequests
                 string title = validLines.ElementAt(0);
                 string body = string.Join(Environment.NewLine, validLines.Skip(1));
 
-                var response = GitHub.CreatePullRequest(title, argumentOptions.BranchName, MainBranch, body);
-                if (response.StatusCode != HttpStatusCode.OK)
+                var response = GitHub.CreatePullRequest(title, argumentOptions.BranchName, mainBranch, body);
+                if (response.StatusCode != HttpStatusCode.Created)
                 {
                     Console.WriteLine("Failed to create PR: \n" +
                                       JsonConvert.SerializeObject(JsonConvert.DeserializeObject(response.RawText),
-                                          Formatting.Indented));
+                                                                  Formatting.Indented));
+                }
+                else
+                {
+                    dynamic pr = JsonConvert.DeserializeObject(response.RawText);
+                    Console.WriteLine("Created PR: " + pr.html_url);
                 }
             }
             else
@@ -122,23 +161,32 @@ namespace GitHubPullRequests
 
             var rowStructure = BuildRowStructure(columnsWidth);
 
-            Console.WriteLine(rowStructure, columnsWidth.Keys.ToArray());
-            Console.WriteLine(rowStructure, columnsWidth.Values.Select(columnWidth => new String('-', columnWidth)).ToArray());
+            var prListTableBuilder = new StringBuilder();
+            prListTableBuilder.AppendLine(string.Format(rowStructure, columnsWidth.Keys.ToArray()));
+            prListTableBuilder.AppendLine(string.Format(rowStructure, columnsWidth.Values.Select(columnWidth => new String('-', columnWidth)).ToArray()));
 
             foreach (var pr in prs)
             {
-                try
-                {
-                    RunGitCommand("cat-file -t " + pr.head.sha);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Failed to find commit in repositry, running a fetch");
-                    RunGitCommand("fetch");
-                }
+                var sha = pr.head.sha;
+                FetchIfNotInRepo(sha);
 
-                var shortSha = RunGitCommand("rev-parse --short " + pr.head.sha).Trim();
-                Console.WriteLine(string.Format(rowStructure, pr.number, shortSha, pr.user.login, pr.head["ref"], pr.title));
+                var shortSha = RunGitCommand("rev-parse --short " + sha).Trim();
+                prListTableBuilder.AppendLine(string.Format(rowStructure, pr.number, shortSha, pr.user.login, pr.head["ref"], pr.title));
+            }
+
+            Console.WriteLine(prListTableBuilder.ToString());
+        }
+
+        private static void FetchIfNotInRepo(dynamic sha)
+        {
+            try
+            {
+                RunGitCommand("cat-file -t " + sha);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to find commit in repositry, running a fetch...");
+                RunGitCommand("fetch");
             }
         }
 

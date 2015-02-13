@@ -11,6 +11,15 @@ namespace GitHubPullRequests
         [Option('c', "create", HelpText = "Create a new PR")]
         public bool CreatePR { get; set; }
 
+        [Option('o', "open-web", HelpText = "Open the PR page")]
+        public bool OpenWeb { get; set; }
+
+        [Option("sha", HelpText = "Get the HEAD SHA of the PR")]
+        public bool Sha { get; set; }
+        
+        [Option("pr-id", HelpText = "ID of the PR to manipulate")]
+        public int? PullRequestId { get; set; }
+
         [Option('b', "branch", HelpText = "The name of the branch")]
         public string BranchName { get; set; }
 

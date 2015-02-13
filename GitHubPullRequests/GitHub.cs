@@ -52,6 +52,12 @@ namespace GitHubPullRequests
             return client;
         }
 
+        public static dynamic GetPullRequestData(int pullRequestId)
+        {
+            return GetPullRequestData(string.Format("{0}/pulls/{1}", _apiRoot, pullRequestId));
+        }
+
+
         public static dynamic GetPullRequestData(string pullRequestUrl)
         {
             var prData = HttpGetQueryGitHub(pullRequestUrl);

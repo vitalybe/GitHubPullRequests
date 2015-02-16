@@ -16,8 +16,6 @@ namespace GitHubPullRequests
     {
         static void Main(string[] args)
         {
-            const string MainBranch = "develop";
-
             var argumentOptions = new ArgumentOptions();
             if (CommandLine.Parser.Default.ParseArguments(args, argumentOptions))
             {
@@ -27,7 +25,7 @@ namespace GitHubPullRequests
                 }
                 else if (argumentOptions.CreatePR && !string.IsNullOrWhiteSpace(argumentOptions.BranchName))
                 {
-                    CreatePullRequest(argumentOptions, MainBranch);
+                    CreatePullRequest(argumentOptions, AppSettings.Default.MasterBranch);
                 }
                 else if (argumentOptions.OpenWeb && argumentOptions.PullRequestId.HasValue)
                 {

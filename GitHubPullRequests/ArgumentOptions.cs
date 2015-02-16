@@ -33,6 +33,10 @@ namespace GitHubPullRequests
                 AdditionalNewLineAfterOption = true,
                 AddDashesToOption = true
             };
+
+            help.AddPreOptionsLine(" ");
+            help.AddPreOptionsLine("API root:\t" + AppSettings.Default.ApiRoot);
+            help.AddPreOptionsLine("GitHub repo:\t" + AppSettings.Default.GitHubRepo);
             help.AddPreOptionsLine("");
             help.AddPreOptionsLine("List PRs: pr -l");
             help.AddPreOptionsLine("Create PR: pr -c -b feature/my-new-feature");

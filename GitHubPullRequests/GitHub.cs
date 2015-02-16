@@ -13,10 +13,10 @@ namespace GitHubPullRequests
 {
     static class GitHub
     {
-        // TODO: Configurable
-        private const string _gitHubRepo = "***REMOVED***";
-        //private const string _gitHubRepo = "***REMOVED***";
-        private static string _apiRoot = "https://***REMOVED***/api/v3/repos/" + _gitHubRepo;
+
+        private static readonly string ApiRoot = AppSettings.Default.ApiRoot + AppSettings.Default.GitHubRepo;
+        private static readonly string AuthorizationValue = "token " + AppSettings.Default.Token;
+
         
         private static dynamic HttpGetQueryGitHub(string requestUrl)
         {
@@ -28,7 +28,7 @@ namespace GitHubPullRequests
         private static HttpResponse HttpPostQueryGitHub(string requestUrl, dynamic body)
         {
             var http = new HttpClient();
-            http.Request.AddExtraHeader("Authorization", "token ***REMOVED***");
+            http.Request.AddExtraHeader("Authorization", AuthorizationValue);
             http.Request.Accept = "application/json";
 
             return http.Post(requestUrl, body, HttpContentTypes.ApplicationJson);
@@ -40,7 +40,7 @@ namespace GitHubPullRequests
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             WebClient client = new WebClient();
             // TODO: Configurable
-            client.Headers.Add("Authorization", "token ***REMOVED***");
+            client.Headers.Add("Authorization", AuthorizationValue);
             client.Headers.Add("Accept", "application/json");
             if (additionalHeaders != null)
             {
@@ -54,7 +54,7 @@ namespace GitHubPullRequests
 
         public static dynamic GetPullRequestData(int pullRequestId)
         {
-            return GetPullRequestData(string.Format("{0}/pulls/{1}", _apiRoot, pullRequestId));
+            return GetPullRequestData(string.Format("{0}/pulls/{1}", ApiRoot, pullRequestId));
         }
 
 
@@ -67,7 +67,7 @@ namespace GitHubPullRequests
 
         public static IEnumerable<dynamic> OpenPullRequests()
         {
-            var prData = HttpGetQueryGitHub(_apiRoot + "/pulls");
+            var prData = HttpGetQueryGitHub(ApiRoot + "/pulls");
 
             return prData;
         }
@@ -81,7 +81,7 @@ namespace GitHubPullRequests
             string responseData = null;
             try
             {
-                responseData = client.DownloadString(_apiRoot+"/events");
+                responseData = client.DownloadString(ApiRoot+"/events");
             }
             catch (WebException e)
             {
@@ -113,7 +113,7 @@ namespace GitHubPullRequests
 
         public static string GetFileCode(string file, string commitId)
         {
-            var getContentQuery = _apiRoot + string.Format("/contents/{0}?ref={1}", file, commitId);
+            var getContentQuery = ApiRoot + string.Format("/contents/{0}?ref={1}", file, commitId);
 
             dynamic contentsQueryResult = HttpGetQueryGitHub(getContentQuery);
             byte[] data = Convert.FromBase64String(contentsQueryResult.content.Value    );
@@ -125,7 +125,7 @@ namespace GitHubPullRequests
         public static string FindPullRequestByCommit(string commitHash)
         {
             Log.Write("Searching for commit: " + commitHash);
-            dynamic openPullRequests = HttpGetQueryGitHub(_apiRoot + "/pulls");
+            dynamic openPullRequests = HttpGetQueryGitHub(ApiRoot + "/pulls");
             foreach (var openPullRequest in openPullRequests)
             {
                 Log.Write("\tSearching in PR: " + openPullRequest.id);
@@ -150,7 +150,7 @@ namespace GitHubPullRequests
             ((IDictionary<string, object>)customer).Add("base", baseBranch); 
             customer.body = body;
 
-            return HttpPostQueryGitHub(_apiRoot + "/pulls", customer);
+            return HttpPostQueryGitHub(ApiRoot + "/pulls", customer);
         }
     }
 }

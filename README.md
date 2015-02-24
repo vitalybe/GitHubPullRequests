@@ -1,5 +1,20 @@
-# GitHubPullRequests
+# About
 A simple C# command-line GitHub's pull-request manipulator
+
+# Configuration
+
+1. Compile
+2. Add the directory of **pr.exe** to **PATH**
+3. Edit **pr.exe.config** and enter the following values:
+
+* **GitHubRepo** - The repo to work with e.g: **angular/angularjs-batarang**
+* **ApiRoot**
+  * For github: **https://api.github.com/repos/** 
+  * For corporate GitHub: **https://HOST/api/v3/repos/**
+* **Token** - The token can be generated, in case of Github at: https://github.com/settings/tokens/new
+* **MasterBranch** - The master development branch, e.g: **master**
+
+#Usage
 
 ```
 Command line pull requests 0.1

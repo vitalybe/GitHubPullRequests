@@ -20,9 +20,12 @@ namespace GitHubPullRequests
         
         private static dynamic HttpGetQueryGitHub(string requestUrl)
         {
-            var client = PrepareForGitHubCall(null);
-            var result = client.DownloadString(requestUrl);
-            return JsonConvert.DeserializeObject(result);
+            var http = new HttpClient();
+            http.Request.AddExtraHeader("Authorization", AuthorizationValue);
+            http.Request.Accept = "application/json";
+
+            var response = http.Get(requestUrl);
+            return JsonConvert.DeserializeObject(response.RawText);
         }
 
         private static HttpResponse HttpPostQueryGitHub(string requestUrl, dynamic body)

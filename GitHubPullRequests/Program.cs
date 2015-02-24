@@ -175,6 +175,7 @@ namespace GitHubPullRequests
             Console.WriteLine(prListTableBuilder.ToString());
         }
 
+        private static bool _alreadyFetched = false;
         private static void FetchIfNotInRepo(dynamic sha)
         {
             try
@@ -183,8 +184,13 @@ namespace GitHubPullRequests
             }
             catch (Exception e)
             {
-                Console.WriteLine("Failed to find commit in repositry, running a fetch...");
-                RunGitCommand("fetch");
+                if (!_alreadyFetched)
+                {
+                    _alreadyFetched = true;
+
+                    Console.WriteLine("Failed to find commit in repositry, running a fetch...");
+                    RunGitCommand("fetch");
+                }
             }
         }
 

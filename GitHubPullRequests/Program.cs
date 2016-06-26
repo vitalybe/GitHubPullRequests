@@ -25,7 +25,7 @@ namespace GitHubPullRequests
                 }
                 else if (argumentOptions.CreatePR && !string.IsNullOrWhiteSpace(argumentOptions.BranchName))
                 {
-                    CreatePullRequest(argumentOptions, AppSettings.Default.MasterBranch);
+                    CreatePullRequest(argumentOptions, Git.AppConfig("MasterBranch"));
                 }
                 else if (argumentOptions.OpenWeb && argumentOptions.PullRequestId.HasValue)
                 {
@@ -42,36 +42,6 @@ namespace GitHubPullRequests
             }
         }
 
-
-        private static string RunGitCommand(string command)
-        {
-            ProcessStartInfo gitInfo = new ProcessStartInfo();
-            gitInfo.CreateNoWindow = true;
-            gitInfo.RedirectStandardError = true;
-            gitInfo.RedirectStandardOutput = true;
-            gitInfo.FileName = "git.exe";
-            gitInfo.UseShellExecute = false;
-
-            Process gitProcess = new Process();
-            gitInfo.Arguments = command; // such as "fetch orign"
-
-            gitProcess.StartInfo = gitInfo;
-            gitProcess.Start();
-
-            string stderr = gitProcess.StandardError.ReadToEnd();  // pick up STDERR
-            string stdout = gitProcess.StandardOutput.ReadToEnd(); // pick up STDOUT
-
-            gitProcess.WaitForExit();
-            int exitCode = gitProcess.ExitCode;
-            gitProcess.Close();
-
-            if (exitCode != 0)
-            {
-                throw new ExternalException(string.Format("Git process returned failure. Exit code: {0}. Error stream: {1}", exitCode, stderr));
-            }
-
-            return stdout;
-        }
 
         private static void PrintPrSha(int pullRequestId)
         {
@@ -168,7 +138,7 @@ namespace GitHubPullRequests
                 var sha = pr.head.sha;
                 FetchIfNotInRepo(sha);
 
-                var shortSha = RunGitCommand("rev-parse --short " + sha).Trim();
+                var shortSha = Git.RunGitCommand("rev-parse --short " + sha).Trim();
                 prListTableBuilder.AppendLine(string.Format(rowStructure, pr.number, shortSha, pr.user.login, pr.head["ref"], pr.title));
             }
 
@@ -180,7 +150,7 @@ namespace GitHubPullRequests
         {
             try
             {
-                RunGitCommand("cat-file -t " + sha);
+                Git.RunGitCommand("cat-file -t " + sha);
             }
             catch (Exception e)
             {
@@ -189,7 +159,7 @@ namespace GitHubPullRequests
                     _alreadyFetched = true;
 
                     Console.WriteLine("Failed to find commit in repositry, running a fetch...");
-                    RunGitCommand("fetch");
+                    Git.RunGitCommand("fetch");
                 }
             }
         }

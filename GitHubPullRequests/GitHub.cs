@@ -14,8 +14,8 @@ namespace GitHubPullRequests
     static class GitHub
     {
 
-        private static readonly string ApiRoot = AppSettings.Default.ApiRoot + AppSettings.Default.GitHubRepo;
-        private static readonly string AuthorizationValue = "token " + AppSettings.Default.Token;
+        private static readonly string ApiRoot = Git.AppConfig("ApiRoot") + Git.AppConfig("GitHubRepo");
+        private static readonly string AuthorizationValue = "token " + Git.AppConfig("Token");
 
         
         private static dynamic HttpGetQueryGitHub(string requestUrl)
